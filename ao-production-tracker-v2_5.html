@@ -1,0 +1,1648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AO Production Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0F1E3C;--navy2:#1B3260;--orange:#E85D2A;--ora2:#FF7A4D;
+  --bg:#F0F3F8;--bg2:#E6EBF4;--white:#FFFFFF;--border:#C8D3E4;
+  --steel:#4A5975;--muted:#7A8BA8;--green:#1D9F6E;--red:#D63031;
+  --amber:#D98C00;--teal:#0B7FC7;--shadow:0 2px 8px rgba(15,30,60,.08),0 8px 32px rgba(15,30,60,.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--navy);font-size:13px;min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--navy);height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.25)}
+.tb-brand{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;color:#fff}
+.brand-dot{width:8px;height:8px;border-radius:50%;background:var(--orange);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.tb-right{display:flex;align-items:center;gap:8px;font-size:11px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
+.sync-dot.spin{animation:pulse 1s infinite;background:var(--amber)}
+#userLbl{color:rgba(255,255,255,.65)}
+.btn-logout{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1.5px solid rgba(255,255,255,.2);border-radius:6px;background:transparent;color:rgba(255,255,255,.7);font-family:'IBM Plex Sans',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .15s}
+.btn-logout:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.4);color:#fff}
+
+/* SUBMISSION DETAIL */
+.sub-detail-section{margin-bottom:16px}
+.sub-detail-section-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);padding:8px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.sub-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sub-detail-row{display:flex;flex-direction:column;gap:2px;padding:8px 10px;background:var(--bg);border-radius:6px}
+.sub-detail-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.sub-detail-value{font-size:13px;color:var(--navy);font-weight:500}
+.sub-detail-value.mono{font-family:'IBM Plex Mono',monospace;font-size:12px}
+.sub-detail-value.good{color:var(--green);font-weight:700}
+.sub-detail-value.bad{color:var(--red);font-weight:700}
+.sub-detail-value.warn{color:var(--amber);font-weight:700}
+.sub-detail-value.empty{color:var(--muted);font-style:italic}
+.sub-detail-span{grid-column:1/-1}
+.sub-detail-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.sub-detail-tbl th{background:var(--bg2);padding:6px 8px;text-align:left;font-size:10px;font-weight:700;color:var(--steel);text-transform:uppercase;letter-spacing:.4px;border:1px solid var(--border)}
+.sub-detail-tbl td{padding:6px 8px;border:1px solid var(--border);color:var(--navy)}
+.sub-detail-tbl tr:nth-child(even) td{background:var(--bg)}
+.approval-chip{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:8px;margin-bottom:6px}
+.approval-chip.approved{background:#EDFAF3;border:1px solid #A7F3D0}
+.approval-chip.rejected{background:#FFF0F0;border:1px solid #FCA5A5}
+.approval-chip.pending{background:#FFF8E6;border:1px solid #FCD34D}
+.ac-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.ac-by{font-size:12px;font-weight:700;color:var(--navy)}
+.ac-status{font-size:11px;font-weight:700}
+.ac-status.approved{color:var(--green)}.ac-status.rejected{color:var(--red)}.ac-status.pending{color:var(--amber)}
+.ac-comment{font-size:11px;color:var(--steel);margin-top:3px;font-style:italic}
+
+/* LAYOUT */
+.container{max-width:920px;margin:0 auto;padding:20px 16px 80px}
+.view{display:none}.view.active{display:block}
+
+/* CARD */
+.card{background:var(--white);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:14px;border:1px solid var(--border)}
+.card-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-body{padding:18px 20px}
+
+/* STAGE CARD GRID */
+.stage-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-top:4px}
+.stage-card{background:var(--white);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);transition:transform .15s,box-shadow .15s}
+.stage-card:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(15,30,60,.12)}
+.sc-head{padding:14px 16px 12px;display:flex;align-items:flex-start;justify-content:space-between}
+.sc-icon-wrap{display:flex;align-items:center;gap:10px}
+.sc-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.sc-label{font-size:14px;font-weight:700;color:var(--navy)}
+.sc-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.sc-runs{padding:0 16px 10px;display:flex;flex-wrap:wrap;gap:5px;min-height:28px}
+.run-badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;transition:opacity .1s}
+.run-badge:hover{opacity:.8}
+.rb-approved{background:#D1FAE5;color:#064E3B}
+.rb-pending{background:#FEF3C7;color:#92400E}
+.rb-rejected{background:#FEE2E2;color:#7F1D1D}
+.rb-none{background:var(--bg2);color:var(--muted)}
+.sc-actions{padding:10px 16px 14px;display:flex;gap:8px;border-top:1px solid var(--border);background:var(--bg)}
+.stage-card.s-blending    .sc-icon{background:#E1F5EE;color:#0F6E56}
+.stage-card.s-filtration  .sc-icon{background:#E6F1FB;color:#185FA5}
+.stage-card.s-filling     .sc-icon{background:#EAF3DE;color:#3B6D11}
+.stage-card.s-pasteur     .sc-icon{background:#FAECE7;color:#993C1D}
+.stage-card.s-labeling    .sc-icon{background:#EEEDFE;color:#3C3489}
+.stage-card.s-blending    .sc-head{border-top:3px solid #1D9F6E}
+.stage-card.s-filtration  .sc-head{border-top:3px solid #0B7FC7}
+.stage-card.s-filling     .sc-head{border-top:3px solid #639922}
+.stage-card.s-pasteur     .sc-head{border-top:3px solid #D85A30}
+.stage-card.s-labeling    .sc-head{border-top:3px solid #534AB7}
+
+/* BATCH LIST */
+.batch-row{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.batch-row:last-child{border-bottom:none}
+.batch-row:hover{background:#F5F8FD}
+.b-id{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600}
+.b-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.b-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.3px}
+.b-active{background:#DBEAFE;color:#1E40AF}
+.b-approved{background:#D1FAE5;color:#064E3B}
+.b-pending{background:#FEF3C7;color:#92400E}
+.b-rejected{background:#FEE2E2;color:#7F1D1D}
+.b-none{background:var(--bg2);color:var(--muted)}
+
+/* FORM FIELDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
+.span2{grid-column:span 2}.span3{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.req{color:var(--red)}
+.field input,.field select,.field textarea{padding:8px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--navy);background:#fff;transition:border-color .15s;width:100%}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,93,42,.1)}
+.field input[readonly]{background:var(--bg2);color:var(--steel);border-style:dashed;font-family:'IBM Plex Mono',monospace;font-weight:600}
+.field input[readonly].good{background:#EDFAF3;color:var(--green)}
+.field input[readonly].warn{background:#FFF8E6;color:var(--amber)}
+.field input[readonly].bad{background:#FFF0F0;color:var(--red)}
+.field textarea{resize:vertical;min-height:64px}
+.mono{font-family:'IBM Plex Mono',monospace!important}
+
+/* SECTION LABEL */
+.sec-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:8px;margin:18px 0 12px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.group-box{border:1.5px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px}
+.group-title{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+
+/* TABLES */
+.log-tbl{width:100%;border-collapse:collapse}
+.log-tbl thead th{background:var(--bg2);padding:7px 8px;font-size:10px;font-weight:700;color:var(--steel);text-transform:uppercase;letter-spacing:.4px;border:1px solid var(--border);text-align:left;white-space:nowrap}
+.log-tbl thead th.spec{background:#FFFBEA;color:var(--amber)}
+.log-tbl thead th.calc{background:#EDF7FF;color:var(--teal)}
+.log-tbl tbody tr:nth-child(even){background:#F7F9FC}
+.log-tbl tbody tr:hover{background:#EEF5FF}
+.log-tbl tbody td{padding:3px 5px;border:1px solid var(--border);vertical-align:middle}
+.log-tbl tbody td input,.log-tbl tbody td select{width:100%;padding:7px 7px;border:none;background:transparent;font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:var(--navy);outline:none}
+.log-tbl tbody td input:focus,.log-tbl tbody td select:focus{background:#fff;border-radius:4px;box-shadow:inset 0 0 0 2px var(--orange)}
+.log-tbl tbody td.calc-cell{background:#EDF7FF;font-family:'IBM Plex Mono',monospace;font-size:11px;text-align:center;color:var(--teal);font-weight:600}
+.log-tbl tbody td.spec-cell.out{background:#FFF0F0!important;color:var(--red)!important;font-weight:700}
+.log-tbl tbody td.spec-cell.ok{background:#EDFAF3!important;color:var(--green)!important}
+.row-num{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);text-align:center;width:24px;border-right:2px solid var(--border)!important;background:var(--bg2)!important}
+.calc-badge{font-size:9px;font-weight:700;background:var(--teal);color:#fff;padding:1px 4px;border-radius:3px;margin-left:4px}
+
+/* SUBMISSION HISTORY */
+.sub-list{padding:0 20px 16px}
+.sub-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;cursor:pointer;transition:background .1s}
+.sub-item:hover{background:var(--bg)}
+.sub-run-label{font-size:12px;font-weight:700;color:var(--navy)}
+.sub-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.sub-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:none;border-radius:7px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--orange);color:#fff}.btn-primary:hover{background:var(--ora2);transform:translateY(-1px)}
+.btn-navy{background:var(--navy);color:#fff}.btn-navy:hover{background:var(--navy2)}
+.btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--steel)}.btn-ghost:hover{border-color:var(--navy);color:var(--navy)}
+.btn-sm{padding:5px 11px;font-size:11px}
+.btn-xs{padding:4px 9px;font-size:10px}
+
+/* SETUP */
+.setup-wrap{max-width:520px;margin:32px auto}
+.setup-logo{text-align:center;font-size:26px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.setup-logo span{color:var(--orange)}
+.setup-sub{text-align:center;font-size:13px;color:var(--muted);margin-bottom:24px}
+
+/* ALERTS */
+.alert{padding:10px 14px;border-radius:7px;font-size:12px;line-height:1.55;margin-bottom:12px}
+.alert-info{background:#EBF5FC;border-left:3px solid var(--teal);color:#0A4D73}
+.alert-warn{background:#FFF8E6;border-left:3px solid var(--amber);color:#7A5A00}
+.alert-success{background:#E8FAF3;border-left:3px solid var(--green);color:#0D5C3A}
+.alert-error{background:#FFF0F0;border-left:3px solid var(--red);color:#8B1A1A}
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* FORM ACTIONS */
+.form-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;padding:11px 16px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 4px 20px rgba(0,0,0,.2);z-index:9999;display:none;align-items:center;gap:8px;max-width:340px}
+.toast.show{display:flex;animation:toastIn .2s ease}
+@keyframes toastIn{from{transform:translateY(6px);opacity:0}to{transform:translateY(0);opacity:1}}
+.t-success{background:var(--green);color:#fff}.t-error{background:var(--red);color:#fff}.t-info{background:var(--navy);color:#fff}
+
+/* EMPTY STATE */
+.empty{padding:48px 24px;text-align:center;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:10px}
+.empty-title{font-size:14px;font-weight:600;color:var(--steel);margin-bottom:6px}
+
+/* BATCH HEADER */
+.batch-banner{background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%);padding:18px 20px;display:flex;justify-content:space-between;align-items:flex-start}
+.bb-id{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;color:#fff;margin-bottom:6px}
+.bb-meta{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:rgba(255,255,255,.6)}
+.bb-meta span strong{color:#fff}
+
+/* DOC BADGE */
+.doc-badge{display:inline-flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:10px;color:var(--steel);font-family:'IBM Plex Mono',monospace;margin-bottom:14px}
+
+/* SIGNOFF GRID */
+.signoff-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.signoff-block{display:flex;flex-direction:column;gap:6px}
+.signoff-label{font-size:11px;font-weight:700;color:var(--navy);padding-bottom:6px;border-bottom:1.5px solid var(--border)}
+
+/* SUBMISSION MODAL */
+.modal-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;padding:20px;overflow-y:auto}
+.modal-box{background:#fff;border-radius:12px;max-width:640px;margin:0 auto;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+
+@media(max-width:600px){
+  .g2,.g3,.g4{grid-template-columns:1fr 1fr}
+  .span2,.span3{grid-column:1/-1}
+  .stage-grid{grid-template-columns:1fr}
+  .signoff-grid{grid-template-columns:1fr}
+  .batch-banner{flex-direction:column;gap:10px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-brand"><div class="brand-dot"></div>AO Production Tracker</div>
+  <div class="tb-right">
+    <span class="sync-dot" id="syncDot"></span>
+    <span id="syncLbl" style="color:rgba(255,255,255,.55)"></span>
+    <span id="userLbl"></span>
+    <button class="btn btn-ghost btn-xs" style="color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.2);margin-left:4px" onclick="goTo('setup')">⚙</button>
+    <button class="btn-logout" onclick="logOut()" title="Log out and clear session">⏻ Log Out</button>
+  </div>
+</div>
+
+<!-- ══ SETUP ══ -->
+<div id="view-setup" class="view">
+<div class="container">
+<div class="setup-wrap">
+  <div class="setup-logo">African <span>Originals</span></div>
+  <div class="setup-sub">Production Tracker — First Time Setup</div>
+  <div class="card">
+    <div class="card-body" style="display:flex;flex-direction:column;gap:14px">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:12px">🔗 Backend Connection</div>
+        <div class="field"><label>Apps Script Web App URL</label><input id="cfg-url" type="url" placeholder="https://script.google.com/macros/s/…/exec"></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:5px">Leave blank to run in demo mode — data saved locally only</div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:12px">👤 Your Identity</div>
+        <div class="g2">
+          <div class="field"><label>Your Name <span class="req">*</span></label><input id="cfg-name" type="text" placeholder="e.g. James Kariuki"></div>
+          <div class="field"><label>Role <span class="req">*</span></label>
+            <select id="cfg-role"><option value="operator">Operator</option><option value="line_manager">Line Manager</option><option value="qc">QC Officer</option></select>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--navy);margin-bottom:12px">📧 Approver Emails</div>
+        <div class="g2">
+          <div class="field"><label>Line Manager Email</label><input id="cfg-lm" type="email" placeholder="lm@africanoriginals.com"></div>
+          <div class="field"><label>QC Officer Email</label><input id="cfg-qc" type="email" placeholder="qc@africanoriginals.com"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">QC approval required for: Filtration · Filling · Pasteurization · Labeling</div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="saveSetup()">Save & Open Dashboard →</button>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- ══ HOME ══ -->
+<div id="view-home" class="view">
+<div class="container">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">🏭 Production Batches</div>
+      <button class="btn btn-primary btn-sm" onclick="goTo('new-batch')">+ New Batch</button>
+    </div>
+    <div id="batchList"></div>
+  </div>
+</div>
+</div>
+
+<!-- ══ NEW BATCH ══ -->
+<div id="view-new-batch" class="view">
+<div class="container">
+  <div class="card">
+    <div class="card-head">
+      <div class="card-title">🆕 New Production Batch</div>
+      <button class="btn btn-ghost btn-sm" onclick="goTo('home')">← Back</button>
+    </div>
+    <div class="card-body">
+      <div class="g3">
+        <div class="field"><label>Batch ID <span class="req">*</span></label><input id="nb-id" type="text" class="mono" placeholder="e.g. AO-20260327-001"></div>
+        <div class="field"><label>Date</label><input id="nb-date" type="date"></div>
+        <div class="field"><label>Shift</label><select id="nb-shift"><option>Day</option><option>Night</option></select></div>
+        <div class="field"><label>Manufacturing Line <span class="req">*</span></label>
+          <select id="nb-line"><option value="">Select…</option><option>Raveco Bottling</option><option>CASK Canning</option><option>Polaris Spirit</option></select>
+        </div>
+        <div class="field"><label>Product / SKU <span class="req">*</span></label><input id="nb-sku" type="text" placeholder="e.g. Savannah Dry 330ml Can"></div>
+        <div class="field"><label>Planned Volume (L)</label><input id="nb-vol" type="number" placeholder="0"></div>
+        <div class="field span3"><label>Batch Notes</label><textarea id="nb-notes" rows="2" placeholder="Any context or special instructions…"></textarea></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="goTo('home')">Cancel</button>
+        <button class="btn btn-primary" onclick="createBatch()">Create Batch →</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ BATCH DETAIL ══ -->
+<div id="view-batch" class="view">
+<div class="container">
+  <div class="card">
+    <div class="batch-banner" id="batchBanner">
+      <div>
+        <div class="bb-id" id="bb-id">—</div>
+        <div class="bb-meta">
+          <span><strong>Line:</strong> <span id="bb-line">—</span></span>
+          <span><strong>SKU:</strong> <span id="bb-sku">—</span></span>
+          <span><strong>Shift:</strong> <span id="bb-shift">—</span></span>
+          <span><strong>Date:</strong> <span id="bb-date">—</span></span>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" style="color:rgba(255,255,255,.6);border-color:rgba(255,255,255,.2)" onclick="goTo('home')">← All Batches</button>
+    </div>
+    <div class="card-body">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Select any stage to log a new run. Stages can be filled in any order — multiple runs per stage are supported.</div>
+      <div class="stage-grid" id="stageGrid"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══ STAGE FORM ══ -->
+<div id="view-stage" class="view">
+<div class="container">
+  <div class="card">
+    <div id="stageFormHead" class="card-head">
+      <div class="card-title" id="stageFormTitle">Stage Form</div>
+      <button class="btn btn-ghost btn-sm" id="stageBackBtn" onclick="backToBatch()">← Back to Batch</button>
+    </div>
+    <div class="card-body">
+      <div id="stageFormBody"></div>
+      <div class="form-actions" id="stageFormActions">
+        <button class="btn btn-ghost" onclick="backToBatch()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitStageForm()">Submit for Approval →</button>
+      </div>
+    </div>
+  </div>
+  <!-- Submission History -->
+  <div class="card" id="subHistoryCard" style="display:none">
+    <div class="card-head"><div class="card-title">📋 Previous Submissions — this stage</div></div>
+    <div id="subHistoryList" style="padding:14px 20px"></div>
+  </div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SUBMISSION DETAIL MODAL -->
+<div class="modal-wrap" id="subModal" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-box" style="max-width:700px">
+    <div style="background:var(--navy);padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="color:#fff;font-weight:700;font-size:14px" id="subModalTitle">Submission Detail</div>
+        <div style="color:rgba(255,255,255,.5);font-size:11px;margin-top:2px" id="subModalMeta"></div>
+      </div>
+      <button onclick="document.getElementById('subModal').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:18px;cursor:pointer;line-height:1">✕</button>
+    </div>
+    <div id="subModalContent" style="padding:16px 18px;max-height:75vh;overflow-y:auto"></div>
+    <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;color:var(--muted)" id="subModalStatus"></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" id="subModalJsonBtn" onclick="toggleSubModalJson()">{ } View Raw JSON</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('subModal').style.display='none'">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- RAW JSON fallback inside modal -->
+<div id="subModalJsonWrap" style="display:none;padding:12px 18px 0;border-top:1px solid var(--border)">
+  <pre id="subModalJson" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--navy);overflow-x:auto;white-space:pre-wrap;line-height:1.6;max-height:300px;overflow-y:auto;background:var(--bg);border-radius:6px;padding:12px"></pre>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STAGE CONFIG
+// ══════════════════════════════════════════════
+const STAGES = [
+  { id:'blending',    label:'Blending',              icon:'🧪', cls:'s-blending',   approvers:['lm'],      color:'#1D9F6E' },
+  { id:'filtration',  label:'Filtration & Centrifuge',icon:'🔬', cls:'s-filtration', approvers:['lm','qc'], color:'#0B7FC7' },
+  { id:'filling',     label:'Filling',               icon:'🥫', cls:'s-filling',    approvers:['lm','qc'], color:'#639922' },
+  { id:'pasteur',     label:'Pasteurization',        icon:'🌡', cls:'s-pasteur',    approvers:['lm','qc'], color:'#D85A30' },
+  { id:'labeling',    label:'Labeling',              icon:'🏷', cls:'s-labeling',   approvers:['lm','qc'], color:'#534AB7' },
+];
+
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let cfg = { url:'', name:'Operator', role:'operator', lmEmail:'', qcEmail:'' };
+let batches = [];
+let activeBatchId = null;
+let activeStageId = null;
+
+function loadState(){
+  try{
+    const c=localStorage.getItem('ao_cfg2');
+    const b=localStorage.getItem('ao_batches2');
+    if(c) cfg=JSON.parse(c);
+    if(b) batches=JSON.parse(b);
+  }catch(e){}
+}
+function persist(){ localStorage.setItem('ao_cfg2',JSON.stringify(cfg)); localStorage.setItem('ao_batches2',JSON.stringify(batches)); }
+
+// ══════════════════════════════════════════════
+// SETUP
+// ══════════════════════════════════════════════
+function saveSetup(){
+  const name=document.getElementById('cfg-name').value.trim();
+  if(!name){toast('Please enter your name','error');return}
+  cfg.url=document.getElementById('cfg-url').value.trim();
+  cfg.name=name;
+  cfg.role=document.getElementById('cfg-role').value;
+  cfg.lmEmail=document.getElementById('cfg-lm').value.trim();
+  cfg.qcEmail=document.getElementById('cfg-qc').value.trim();
+  persist();
+  document.getElementById('userLbl').textContent='👤 '+cfg.name;
+  setSyncState(cfg.url?'ok':'warn',cfg.url?'Connected':'Demo mode');
+  toast('Setup saved','success');
+  goTo('home');
+}
+function loadSetupForm(){
+  document.getElementById('cfg-url').value=cfg.url||'';
+  document.getElementById('cfg-name').value=cfg.name;
+  document.getElementById('cfg-role').value=cfg.role;
+  document.getElementById('cfg-lm').value=cfg.lmEmail||'';
+  document.getElementById('cfg-qc').value=cfg.qcEmail||'';
+}
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+function goTo(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+view)?.classList.add('active');
+  if(view==='home') renderBatchList();
+  if(view==='new-batch') initNewBatch();
+  if(view==='setup') loadSetupForm();
+  window.scrollTo(0,0);
+}
+function backToBatch(){ openBatch(activeBatchId); }
+
+// ══════════════════════════════════════════════
+// BATCH MANAGEMENT
+// ══════════════════════════════════════════════
+function initNewBatch(){
+  document.getElementById('nb-date').value=today();
+  document.getElementById('nb-id').value='';
+}
+function genBatchId(){
+  const d=new Date().toISOString().split('T')[0].replace(/-/g,'');
+  const n=String(batches.length+1).padStart(3,'0');
+  return `AO-${d}-${n}`;
+}
+function createBatch(){
+  const line=document.getElementById('nb-line').value;
+  const sku=document.getElementById('nb-sku').value.trim();
+  if(!line||!sku){toast('Line and SKU are required','error');return}
+  const b={
+    id:document.getElementById('nb-id').value,
+    date:document.getElementById('nb-date').value,
+    line, sku,
+    shift:document.getElementById('nb-shift').value,
+    vol:document.getElementById('nb-vol').value,
+    notes:document.getElementById('nb-notes').value,
+    createdBy:cfg.name,
+    createdAt:new Date().toISOString(),
+    stages:{ blending:[], filtration:[], filling:[], pasteur:[], labeling:[] },
+  };
+  batches.unshift(b);
+  persist();
+  toast('Batch created','success');
+  openBatch(b.id);
+}
+
+function renderBatchList(){
+  const el=document.getElementById('batchList');
+  if(!batches.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🏭</div><div class="empty-title">No batches yet</div><p style="font-size:12px">Create a new batch to start logging production runs</p></div>`;
+    return;
+  }
+  el.innerHTML=batches.map(b=>{
+    const totalSubs=STAGES.reduce((n,s)=>n+(b.stages[s.id]?.length||0),0);
+    const allApproved=STAGES.every(s=>(b.stages[s.id]||[]).every(r=>r.status==='approved'));
+    const hasPending=STAGES.some(s=>(b.stages[s.id]||[]).some(r=>r.status==='pending'));
+    const hasRej=STAGES.some(s=>(b.stages[s.id]||[]).some(r=>r.status==='rejected'));
+    const bCls=allApproved&&totalSubs?'b-approved':hasPending?'b-pending':hasRej?'b-rejected':totalSubs?'b-active':'b-none';
+    const bTxt=allApproved&&totalSubs?'Complete':hasPending?'Pending Approval':hasRej?'Has Rejections':totalSubs?'In Progress':'Not Started';
+    return `<div class="batch-row" onclick="openBatch('${b.id}')">
+      <div>
+        <div class="b-id">${b.id}</div>
+        <div class="b-meta">${b.sku} · ${b.line} · ${b.shift} · ${b.date}</div>
+      </div>
+      <div class="b-right">
+        <span class="badge ${bCls}">${bTxt}</span>
+        <span style="font-size:10px;color:var(--muted)">${totalSubs} run${totalSubs!==1?'s':''} logged</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openBatch(id){
+  activeBatchId=id;
+  const b=batches.find(x=>x.id===id);
+  if(!b) return;
+  document.getElementById('bb-id').textContent=b.id;
+  document.getElementById('bb-line').textContent=b.line;
+  document.getElementById('bb-sku').textContent=b.sku;
+  document.getElementById('bb-shift').textContent=b.shift;
+  document.getElementById('bb-date').textContent=b.date;
+  renderStageGrid(b);
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-batch').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ══════════════════════════════════════════════
+// STAGE CARD GRID
+// ══════════════════════════════════════════════
+function renderStageGrid(b){
+  const grid=document.getElementById('stageGrid');
+  grid.innerHTML=STAGES.map(s=>{
+    const subs=b.stages[s.id]||[];
+    const runBadges=subs.length
+      ? subs.map((r,i)=>`<span class="run-badge rb-${r.status}" onclick="event.stopPropagation();viewSubmission('${b.id}','${s.id}',${i})" title="${r.status} — ${r.submittedAt?.slice(0,10)}">Run ${i+1}</span>`).join('')
+      : `<span class="run-badge rb-none">No runs yet</span>`;
+    const allOk=subs.length&&subs.every(r=>r.status==='approved');
+    const anyPend=subs.some(r=>r.status==='pending');
+    const anyRej=subs.some(r=>r.status==='rejected');
+    const statusDot=allOk?'✅':anyPend?'⏳':anyRej?'❌':subs.length?'📝':'○';
+    const statusTxt=allOk?'All approved':anyPend?'Awaiting approval':anyRej?'Has rejections':subs.length?'In progress':'Not started';
+    return `<div class="stage-card ${s.cls}">
+      <div class="sc-head">
+        <div class="sc-icon-wrap">
+          <div class="sc-icon">${s.icon}</div>
+          <div>
+            <div class="sc-label">${s.label}</div>
+            <div class="sc-sub">${statusDot} ${statusTxt} · ${subs.length} run${subs.length!==1?'s':''}</div>
+          </div>
+        </div>
+      </div>
+      <div class="sc-runs">${runBadges}</div>
+      <div class="sc-actions">
+        <button class="btn btn-primary btn-xs" onclick="openStageForm('${b.id}','${s.id}')">+ Log New Run</button>
+        ${subs.length?`<button class="btn btn-ghost btn-xs" onclick="openStageForm('${b.id}','${s.id}',true)">View History</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// STAGE FORM OPEN
+// ══════════════════════════════════════════════
+function openStageForm(batchId, stageId, historyOnly=false){
+  activeBatchId=batchId;
+  activeStageId=stageId;
+  const b=batches.find(x=>x.id===batchId);
+  const s=STAGES.find(x=>x.id===stageId);
+  document.getElementById('stageFormTitle').textContent=`${s.icon} ${s.label} — New Run`;
+  document.getElementById('stageFormBody').innerHTML=renderStageForm(stageId, b);
+  initStageFormCalcs(stageId);
+  renderSubHistory(batchId, stageId);
+  document.getElementById('stageFormActions').style.display=historyOnly?'none':'flex';
+  document.getElementById('stageFormBody').style.display=historyOnly?'none':'block';
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-stage').classList.add('active');
+  window.scrollTo(0,0);
+  if(historyOnly) document.getElementById('subHistoryCard').scrollIntoView({behavior:'smooth'});
+}
+
+function renderSubHistory(batchId, stageId){
+  const b=batches.find(x=>x.id===batchId);
+  const subs=b?.stages[stageId]||[];
+  const card=document.getElementById('subHistoryCard');
+  const list=document.getElementById('subHistoryList');
+  if(!subs.length){card.style.display='none';return}
+  card.style.display='block';
+  list.innerHTML=subs.map((r,i)=>`
+    <div class="sub-item" onclick="viewSubmission('${batchId}','${stageId}',${i})">
+      <div>
+        <div class="sub-run-label">Run ${i+1} — ${r.data?.date||r.submittedAt?.slice(0,10)||'—'}</div>
+        <div class="sub-meta">Submitted by ${r.submittedBy} · ${r.submittedAt?.slice(0,16).replace('T',' ')||'—'}</div>
+        ${r.approvals?Object.entries(r.approvals).map(([t,a])=>
+          `<div style="font-size:10px;color:${a.status==='approved'?'var(--green)':a.status==='rejected'?'var(--red)':'var(--amber)'};margin-top:3px">${t==='lm'?'Line Manager':'QC'}: ${a.status}${a.comment?' — "'+a.comment+'"':''}</div>`
+        ).join(''):''}
+      </div>
+      <div class="sub-right">
+        <span class="badge ${r.status==='approved'?'b-approved':r.status==='rejected'?'b-rejected':r.status==='pending'?'b-pending':'b-none'}">${r.status||'draft'}</span>
+        <span style="font-size:10px;color:var(--muted)">Click to view</span>
+      </div>
+    </div>`).join('');
+}
+
+function viewSubmission(batchId, stageId, idx){
+  const b=batches.find(x=>x.id===batchId);
+  const sub=b?.stages[stageId]?.[idx];
+  if(!sub) return;
+  const s=STAGES.find(x=>x.id===stageId);
+
+  // Header
+  document.getElementById('subModalTitle').textContent=`${s.icon} ${s.label} — Run ${idx+1}`;
+  document.getElementById('subModalMeta').textContent=
+    `Submitted by ${sub.submittedBy} · ${sub.submittedAt?.slice(0,16).replace('T',' ')||'—'} · Batch ${batchId}`;
+
+  // Status line
+  const sEl=document.getElementById('subModalStatus');
+  const statusColour=sub.status==='approved'?'var(--green)':sub.status==='rejected'?'var(--red)':'var(--amber)';
+  sEl.innerHTML=`Status: <strong style="color:${statusColour};text-transform:uppercase">${sub.status}</strong>`;
+
+  // Store raw JSON for toggle
+  document.getElementById('subModalJson').textContent=JSON.stringify(sub,null,2);
+  document.getElementById('subModalJsonWrap').style.display='none';
+  document.getElementById('subModalJsonBtn').textContent='{ } View Raw JSON';
+
+  // Build formatted view
+  const d=sub.data||{};
+  let html='';
+
+  // ── APPROVALS ──
+  const approvals=sub.approvals||{};
+  const apKeys=Object.keys(approvals);
+  html+=`<div class="sub-detail-section">
+    <div class="sub-detail-section-title">✅ Approval Status</div>`;
+  if(!apKeys.length){
+    html+=`<div style="font-size:12px;color:var(--muted);font-style:italic;padding:8px 0">
+      No approvals recorded yet — awaiting supervisor review</div>`;
+  } else {
+    s.approvers.forEach(at=>{
+      const ap=approvals[at];
+      const aLabel=at==='lm'?'Line Manager':'QC Officer';
+      const aStatus=ap?.status||'pending';
+      const aIcon=aStatus==='approved'?'✅':aStatus==='rejected'?'❌':'⏳';
+      html+=`<div class="approval-chip ${aStatus}">
+        <div class="ac-icon">${aIcon}</div>
+        <div>
+          <div class="ac-by">${aLabel}</div>
+          <div class="ac-status ${aStatus}">${aStatus.charAt(0).toUpperCase()+aStatus.slice(1)}</div>
+          ${ap?.comment?`<div class="ac-comment">"${ap.comment}"</div>`:''}
+          ${ap?.at?`<div style="font-size:10px;color:var(--muted);margin-top:2px">${ap.at.slice(0,16).replace('T',' ')}</div>`:''}
+        </div>
+      </div>`;
+    });
+  }
+  html+=`</div>`;
+
+  // ── HEADER FIELDS ──
+  html+=`<div class="sub-detail-section">
+    <div class="sub-detail-section-title">📋 Run Header</div>
+    <div class="sub-detail-grid">`;
+  const headerFields=[
+    ['Date',d.date],['Product',d.product||d.product_name],
+    ['Batch No.',d.batch_no,'mono'],['Shift',d.shift],
+    ['Blend LOT',d.blend_lot,'mono'],['Fill Lot — Bottles',d.fill_lot_bottles,'mono'],
+    ['Fill Lot — Cans',d.fill_lot_cans,'mono'],
+    // filtration header
+    ['Product',d.product],
+    // filling/pasteur/labeling
+    ['SKU',d.sku],['Labellers',d.labellers],['Worker',d.worker],
+  ].filter(f=>f[1]!==undefined&&f[1]!==null&&f[1]!=='');
+  // deduplicate by label
+  const seen=new Set();
+  headerFields.forEach(f=>{
+    if(seen.has(f[0])) return; seen.add(f[0]);
+    html+=`<div class="sub-detail-row">
+      <div class="sub-detail-label">${f[0]}</div>
+      <div class="sub-detail-value ${f[2]||''}">${f[1]||'—'}</div>
+    </div>`;
+  });
+  html+=`</div></div>`;
+
+  // ── STAGE-SPECIFIC SECTIONS ──
+  if(stageId==='blending'){
+    // Cider base
+    const cb=d.cider_base||[];
+    if(cb.length){
+      html+=`<div class="sub-detail-section">
+        <div class="sub-detail-section-title">🛢 Cider Base Details</div>
+        <div style="overflow-x:auto"><table class="sub-detail-tbl">
+          <thead><tr><th>Tank</th><th>Batch</th><th>Lot</th><th>Vol (L)</th><th>ABV%</th><th>Brix</th><th>TA</th><th>pH</th><th>QC</th></tr></thead>
+          <tbody>${cb.map(r=>`<tr><td>${r.tank||'—'}</td><td>${r.batch||'—'}</td><td>${r.lot||'—'}</td><td>${r.vol||'—'}</td><td>${r.abv||'—'}</td><td>${r.brix||'—'}</td><td>${r.ta||'—'}</td><td>${r.ph||'—'}</td><td>${r.qc||'—'}</td></tr>`).join('')}
+          </tbody></table></div></div>`;
+    }
+    // Recipe
+    const ri=(d.recipe?.ingredients)||[];
+    if(ri.length){
+      html+=`<div class="sub-detail-section">
+        <div class="sub-detail-section-title">📐 Recipe vs Actual</div>
+        <div style="overflow-x:auto"><table class="sub-detail-tbl">
+          <thead><tr><th>Ingredient</th><th>% Qty</th><th>Qty to Use</th><th>Lot</th><th>Qty Used</th></tr></thead>
+          <tbody>${ri.map(r=>`<tr><td>${r.name||'—'}</td><td>${r.pct||'—'}</td><td>${r.qty_use||'—'}</td><td>${r.lot||'—'}</td><td>${r.qty_used||'—'}</td></tr>`).join('')}
+          </tbody></table></div>
+        <div class="sub-detail-grid" style="margin-top:10px">
+          ${sdRow('Expected Volume (L)',d.recipe?.expected_vol)}
+          ${sdRow('Actual Volume (L)',d.recipe?.actual_vol,'',true)}
+        </div></div>`;
+    }
+    // Product chars
+    const pc=d.product_chars||{};
+    if(Object.values(pc).some(v=>v)){
+      html+=`<div class="sub-detail-section">
+        <div class="sub-detail-section-title">🔬 Product Characteristics (QC)</div>
+        <div class="sub-detail-grid">
+          ${sdRow('Specific Gravity',pc.sg)}${sdRow('Brix',pc.brix)}
+          ${sdRow('Titratable Acidity',pc.ta)}${sdRow('pH',pc.ph)}
+          ${sdRow('Done By',pc.done_by)}
+        </div></div>`;
+    }
+    // Blending details
+    const bd=d.blending_details||{};
+    if(Object.values(bd).some(v=>v)){
+      html+=`<div class="sub-detail-section">
+        <div class="sub-detail-section-title">❄ Blending Details</div>
+        <div class="sub-detail-grid">
+          ${sdRow('Blending Tank',bd.tank)}${sdRow('Centrifuge Loss (L)',bd.centrifuge_loss)}
+          ${sdRow('Cold Crushing Period',bd.cc_period)}${sdRow('Cold Crushing Temp (°C)',bd.cc_temp)}
+          ${sdRow('CC Start',bd.cc_start)}${sdRow('CC Stop',bd.cc_stop)}
+        </div></div>`;
+    }
+  }
+
+  if(stageId==='filtration'){
+    const ft=(d.filtration?.rows)||[];
+    if(ft.length){
+      html+=`<div class="sub-detail-section">
+        <div class="sub-detail-section-title">🔬 Filtration Rows</div>
+        <div style="overflow-x:auto"><table class="sub-detail-tbl">
+          <thead><tr><th>Date</th><th>Shift</th><th>Stage</th><th>Filter</th><th>Micron</th><th>Orig Vol</th><th>New Vol</th><th>Exec By</th><th>Conf By</th><th>Scrap</th></tr></thead>
+          <tbody>${ft.map(r=>`<tr><td>${r.date||'—'}</td><td>${r.shift||'—'}</td><td>${r.stage||'—'}</td><td>${r.filter_type||'—'}</td><td>${r.micron||'—'}</td><td>${r.orig_vol||'—'}</td><td>${r.new_vol||'—'}</td><td>${r.exec_by||'—'}</td><td>${r.conf_by||'—'}</td><td>${r.scrap||'—'}</td></tr>`).join('')}
+          </tbody></table></div></div>`;
+    }
+    const ct=(d.centrifuge?.rows)||[];
+    if(ct.length){
+      html+=`<div class="sub-detail-section">
+        <div class="sub-detail-section-title">⚙ Centrifuge Rows</div>
+        <div style="overflow-x:auto"><table class="sub-detail-tbl">
+          <thead><tr><th>Date</th><th>Product</th><th>Shift</th><th>Stage</th><th>Flow Rate</th><th>Back Press.</th><th>Orig Vol</th><th>New Vol</th><th>Exec By</th></tr></thead>
+          <tbody>${ct.map(r=>`<tr><td>${r.date||'—'}</td><td>${r.product||'—'}</td><td>${r.shift||'—'}</td><td>${r.stage||'—'}</td><td>${r.flow||'—'}</td><td>${r.bp||'—'}</td><td>${r.orig_vol||'—'}</td><td>${r.new_vol||'—'}</td><td>${r.exec_by||'—'}</td></tr>`).join('')}
+          </tbody></table></div></div>`;
+    }
+    const t=d.temperature||{};
+    html+=`<div class="sub-detail-section">
+      <div class="sub-detail-section-title">🌡 Temperature Control</div>
+      <div class="sub-detail-grid">
+        ${sdRow('Initial Temp (°C)',t.initial_temp)}
+        ${sdRow('Init Done By',t.init_done_by)}
+      </div></div>`;
+  }
+
+  if(stageId==='filling'){
+    const r=d.run||{};
+    html+=`<div class="sub-detail-section">
+      <div class="sub-detail-section-title">🛢 Tank Details</div>
+      <div class="sub-detail-grid">
+        ${sdRow('Start Volume (L)',r.tank?.start_vol)}${sdRow('Start Temp (°C)',r.tank?.start_temp)}
+        ${sdRow('Final Volume (L)',r.tank?.final_vol)}${sdRow('Final Temp (°C)',r.tank?.final_temp)}
+        ${sdRow('Vol Packed (L)',r.vol_packed)}${sdRow('Issue for Pasteurization',r.issue_past)}
+      </div></div>`;
+    html+=`<div class="sub-detail-section">
+      <div class="sub-detail-section-title">🥫 Cans / Bottles &amp; Caps / Crowns</div>
+      <div class="sub-detail-grid">
+        ${sdRow('Cans Issued',r.cans?.issued)}${sdRow('Cans Used',r.cans?.used)}
+        ${sdRow('Cans Damaged',r.cans?.damaged)}${sdRow('Cans Balance',r.cans?.balance,'',true)}
+        ${sdRow('Caps Issued',r.caps?.issued)}${sdRow('Caps Used',r.caps?.used)}
+        ${sdRow('Caps Damaged',r.caps?.damaged)}${sdRow('Caps Balance',r.caps?.balance,'',true)}
+      </div></div>`;
+    const t=r.timing||{};
+    html+=`<div class="sub-detail-section">
+      <div class="sub-detail-section-title">⏱ Timing &amp; OEE</div>
+      <div class="sub-detail-grid">
+        ${sdRow('Start Time',t.start)}${sdRow('Finish Time',t.finish)}
+        ${sdRow('Downtime (hrs)',t.downtime)}${sdRow('Available Hrs',t.avail_hrs)}
+        ${sdRow('Availability %',t.availability,'',true)}${sdRow('Performance %',t.performance)}
+        ${sdRow('Quality %',t.quality)}
+      </div></div>`;
+    const ls=d.loss||{};
+    html+=`<div class="sub-detail-section">
+      <div class="sub-detail-section-title">📉 Filling Loss</div>
+      <div class="sub-detail-grid">
+        ${sdRow('Start Vol (L)',ls.start_vol)}${sdRow('Final Vol (L)',ls.final_vol)}
+        ${sdRow('Filling Loss (L)',ls.loss,'',true)}${sdRow('% Loss',ls.pct_loss,'',true)}
+        ${sdRow('Causes',ls.causes,'',false,true)}
+      </div></div>`;
+  }
+
+  if(stageId==='pasteur'){
+    const c=d.counts||{};
+    const k=d.kpis||{};
+    html+=`<div class="sub-detail-section">
+      <div class="sub-detail-section-title">📦 Product Counts &amp; KPIs</div>
+      <div class="sub-detail-grid">
+        ${sdRow('Total Issued',c.issued)}${sdRow('Product Pasteurized',c.pasteurized)}
+        ${sdRow('Damaged',c.damaged)}${sdRow('Unaccounted',c.unaccounted,'',true)}
+        ${sdRow('Yield %',k.yield_pct,'',true)}${sdRow('Damage Rate %',k.damage_rate,'',true)}
+        ${sdRow('Pass / Fail',k.pass_fail,'',true)}${sdRow('Data Tally',d.tally)}
+        ${sdRow('Confirmed By',d.confirmed_by)}
+      </div></div>`;
+  }
+
+  if(stageId==='labeling'){
+    const c=d.counts||{};
+    const k=d.kpis||{};
+    html+=`<div class="sub-detail-section">
+      <div class="sub-detail-section-title">📦 Product Counts &amp; KPIs</div>
+      <div class="sub-detail-grid">
+        ${sdRow('Total Issued',c.issued)}${sdRow('Labeled Product',c.labeled)}
+        ${sdRow('Non-conforming',c.non_conf)}${sdRow('Unaccounted',c.unaccounted,'',true)}
+        ${sdRow('Yield %',k.yield_pct,'',true)}${sdRow('Non-conf Rate %',k.nc_rate,'',true)}
+        ${sdRow('Pass / Fail',k.pass_fail,'',true)}
+      </div></div>`;
+    html+=`<div class="sub-detail-section">
+      <div class="sub-detail-section-title">🏷 Label Balances</div>
+      <div style="overflow-x:auto"><table class="sub-detail-tbl">
+        <thead><tr><th>Type</th><th>Issued</th><th>Consumed</th><th>Damaged</th><th>Balance</th></tr></thead>
+        <tbody>
+          <tr><td>Bottle Front</td><td>${d.bottle_labels?.front?.issued||'—'}</td><td>${d.bottle_labels?.front?.consumed||'—'}</td><td>${d.bottle_labels?.front?.damaged||'—'}</td><td>${d.bottle_labels?.front?.balance||'—'}</td></tr>
+          <tr><td>Bottle Back</td><td>${d.bottle_labels?.back?.issued||'—'}</td><td>${d.bottle_labels?.back?.consumed||'—'}</td><td>${d.bottle_labels?.back?.damaged||'—'}</td><td>${d.bottle_labels?.back?.balance||'—'}</td></tr>
+          <tr><td>Can Full Wrap</td><td>${d.can_labels?.full?.issued||'—'}</td><td>${d.can_labels?.full?.consumed||'—'}</td><td>${d.can_labels?.full?.damaged||'—'}</td><td>${d.can_labels?.full?.balance||'—'}</td></tr>
+        </tbody></table></div></div>`;
+    html+=`<div class="sub-detail-section">
+      <div class="sub-detail-section-title">🏛 KRA &amp; Verification</div>
+      <div class="sub-detail-grid">
+        ${sdRow('KRA Applied (pcs)',d.kra_applied,'mono')}
+        ${sdRow('Verified By (First)',d.verified_by_first)}
+        ${sdRow('Verified By (Final)',d.verified_by_final)}
+      </div></div>`;
+  }
+
+  // Sign-off
+  const so=d.sign_off||{};
+  const soEntries=Object.entries(so).filter(([_,v])=>v&&(v.name||v.sign||v.done_by));
+  if(soEntries.length||so.done_by||so.verified_by){
+    html+=`<div class="sub-detail-section">
+      <div class="sub-detail-section-title">✍ Sign-Off</div>
+      <div class="sub-detail-grid">`;
+    if(so.done_by) html+=sdRow('Done By',so.done_by);
+    if(so.verified_by) html+=sdRow('Verified By',so.verified_by);
+    if(so.prod_lead) html+=sdRow('Production Lead',so.prod_lead);
+    if(so.tmo?.name) html+=sdRow('TMO Name',so.tmo.name);
+    if(so.em?.name) html+=sdRow('EM Name',so.em.name);
+    if(so.pom?.name) html+=sdRow('POM Name',so.pom.name);
+    html+=`</div></div>`;
+  }
+
+  document.getElementById('subModalContent').innerHTML=html;
+  document.getElementById('subModal').style.display='block';
+}
+
+// Helper: single detail row
+function sdRow(label, value, extraCls='', highlight=false, span=false){
+  const isEmpty=!value||value==='';
+  const displayVal=isEmpty?'Not recorded':value;
+  const cls=isEmpty?'empty':(highlight&&value?'good':'');
+  return `<div class="sub-detail-row${span?' sub-detail-span':''}">
+    <div class="sub-detail-label">${label}</div>
+    <div class="sub-detail-value ${extraCls} ${cls}">${displayVal}</div>
+  </div>`;
+}
+
+let jsonShowing=false;
+function toggleSubModalJson(){
+  jsonShowing=!jsonShowing;
+  document.getElementById('subModalJsonWrap').style.display=jsonShowing?'block':'none';
+  document.getElementById('subModalJsonBtn').textContent=jsonShowing?'{ } Hide Raw JSON':'{ } View Raw JSON';
+}
+
+// ══════════════════════════════════════════════
+// STAGE FORM SUBMISSION
+// ══════════════════════════════════════════════
+async function submitStageForm(){
+  const b=batches.find(x=>x.id===activeBatchId);
+  const s=STAGES.find(x=>x.id===activeStageId);
+  if(!b||!s) return;
+
+  // Collect all form data
+  const data=collectFormData(activeStageId);
+
+  // Basic validation
+  const requiredFields={
+    blending:['bl-date','bl-product','bl-batch','bl-shift'],
+    filtration:['fi-batch','fi-date'],
+    filling:['fl-product','fl-date','fl-batch'],
+    pasteur:['pa-date','pa-product','pa-batch'],
+    labeling:['la-date','la-product','la-batch'],
+  };
+  const missing=(requiredFields[activeStageId]||[]).filter(id=>!document.getElementById(id)?.value?.trim());
+  if(missing.length){toast('Fill in required fields','error');document.getElementById(missing[0])?.scrollIntoView({behavior:'smooth',block:'center'});return}
+
+  const sub={
+    id:`${activeBatchId}-${activeStageId}-${Date.now()}`,
+    stageId:activeStageId,
+    stageLabel:s.label,
+    batchId:activeBatchId,
+    submittedBy:cfg.name,
+    submittedAt:new Date().toISOString(),
+    status:'pending',
+    approvals:{},
+    data,
+  };
+
+  if(!b.stages[activeStageId]) b.stages[activeStageId]=[];
+  b.stages[activeStageId].push(sub);
+  persist();
+
+  // Sync to Apps Script
+  if(cfg.url){
+    setSyncState('spin','Sending…');
+    try{
+      await fetch(cfg.url,{
+        method:'POST',mode:'no-cors',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          action:'submitStage',
+          batchId:b.id, sku:b.sku, line:b.line, shift:b.shift, date:b.date,
+          stageId:activeStageId, stageLabel:s.label,
+          runNumber:b.stages[activeStageId].length,
+          data, submittedBy:cfg.name, submittedAt:sub.submittedAt,
+          approvers:s.approvers, lmEmail:cfg.lmEmail, qcEmail:cfg.qcEmail,
+          appUrl:window.location.href.split('?')[0],
+        }),
+      });
+      setSyncState('ok','Synced');
+      toast(`${s.label} — Run ${b.stages[activeStageId].length} submitted ✓`,'success');
+    }catch(e){
+      setSyncState('warn','Offline');
+      toast('Saved locally — server unreachable','error');
+    }
+  } else {
+    toast(`${s.label} — Run ${b.stages[activeStageId].length} logged (demo mode)`,'success');
+  }
+
+  openBatch(activeBatchId);
+}
+
+function collectFormData(stageId){
+  const v=id=>document.getElementById(id)?.value||'';
+  const tblRows=(prefix,fields,n)=>Array.from({length:n},(_,i)=>{
+    const r={};
+    fields.forEach(f=>{const el=document.querySelector(`[name="${prefix}_${f}_${i+1}"]`);if(el)r[f]=el.value});
+    return r;
+  }).filter(r=>Object.values(r).some(x=>x));
+
+  if(stageId==='blending') return {
+    date:v('bl-date'),product:v('bl-product'),batch_no:v('bl-batch'),
+    blend_lot:v('bl-blend-lot'),fill_lot_bottles:v('bl-fill-btl'),fill_lot_cans:v('bl-fill-can'),shift:v('bl-shift'),
+    cider_base:tblRows('cb',['tank','batch','lot','vol','abv','brix','ta','ph','remarks','qc'],4),
+    recipe:{ingredients:tblRows('ri',['name','pct','qty_use','lot','qty_used'],8),expected_vol:v('bl-exp-vol'),actual_vol:v('bl-act-vol')},
+    product_chars:{sg:v('bl-sg'),brix:v('bl-pc-brix'),ta:v('bl-ta'),ph:v('bl-ph'),done_by:v('bl-pc-by')},
+    blending_details:{tank:v('bl-bd-tank'),centrifuge_loss:v('bl-centloss'),cc_period:v('bl-ccperiod'),cc_temp:v('bl-cctemp'),cc_start:v('bl-ccstart'),cc_stop:v('bl-ccstop')},
+    sign_off:{done_by:v('bl-done-by'),done_date:v('bl-done-date'),verified_by:v('bl-vfy-by'),verified_date:v('bl-vfy-date')},
+  };
+  if(stageId==='filtration') return {
+    batch_no:v('fi-batch'),product:v('fi-product'),date:v('fi-date'),
+    filtration:{rows:tblRows('ft',['date','shift','product','stage','filter_type','micron','tank','orig_vol','new_vol','exec_by','conf_by','scrap'],5),comment:v('fi-comment')},
+    centrifuge:{rows:tblRows('ct',['date','product','shift','stage','flow','bp','orig_vol','new_vol','exec_by','conf_by','scrap'],3)},
+    temperature:{initial_temp:v('fi-init-temp'),init_done_by:v('fi-init-by'),init_prod_lead:v('fi-init-lead'),readings:tblRows('ft_t',['date','shift','temp','done_by','prod_lead'],6)},
+    sign_off:{done_by:v('fi-done-by'),date:v('fi-so-date'),shift:v('fi-so-shift'),prod_lead:v('fi-prod-lead')},
+  };
+  if(stageId==='filling') return {
+    product:v('fl-product'),shift:v('fl-shift'),
+    run:{date:v('fl-date'),operators:v('fl-operators'),machine:v('fl-machine'),batch_no:v('fl-batch'),sku:v('fl-sku'),
+      tank:{start_vol:v('fl-tank-sv'),start_temp:v('fl-tank-st'),final_vol:v('fl-tank-fv'),final_temp:v('fl-tank-ft')},
+      vol_packed:v('fl-vol-packed'),issue_past:v('fl-issue-past'),
+      cans:{issued:v('fl-cans-i'),used:v('fl-cans-u'),damaged:v('fl-cans-d'),balance:v('fl-cans-b'),tally:v('fl-cans-tally')},
+      caps:{issued:v('fl-caps-i'),used:v('fl-caps-u'),damaged:v('fl-caps-d'),balance:v('fl-caps-b'),tally:v('fl-caps-tally')},
+      timing:{start:v('fl-start'),finish:v('fl-finish'),downtime:v('fl-downtime'),avail_hrs:v('fl-avail'),availability:v('fl-avail-pct'),performance:v('fl-perf'),quality:v('fl-qual')},
+      flow_meter:{start_r1:v('fl-fm-s1'),start_r2:v('fl-fm-s2'),stop_r1:v('fl-fm-e1'),stop_r2:v('fl-fm-e2')},
+      confirmed_by:v('fl-conf-by'),
+    },
+    loss:{start_vol:v('fl-ls-sv'),final_vol:v('fl-ls-fv'),loss:v('fl-ls-loss'),causes:v('fl-ls-cause'),total_loss:v('fl-ls-total'),pct_loss:v('fl-ls-pct')},
+    sign_off:{tmo:{name:v('fl-tmo-name'),sign:v('fl-tmo-sign')},em:{name:v('fl-em-name'),sign:v('fl-em-sign')},pom:{name:v('fl-pom-name'),sign:v('fl-pom-sign')}},
+  };
+  if(stageId==='pasteur') return {
+    date:v('pa-date'),product:v('pa-product'),batch_no:v('pa-batch'),sku:v('pa-sku'),
+    worker:v('pa-worker'),
+    counts:{issued:v('pa-issued'),pasteurized:v('pa-past'),damaged:v('pa-damaged'),unaccounted:v('pa-unacc')},
+    kpis:{yield_pct:v('pa-yield'),damage_rate:v('pa-dmg-rate'),pass_fail:v('pa-pf')},
+    tally:v('pa-tally'),confirmed_by:v('pa-conf-by'),
+    sign_off:{tmo:{name:v('pa-tmo-name'),sign:v('pa-tmo-sign')},em:{name:v('pa-em-name'),sign:v('pa-em-sign')},pom:{name:v('pa-pom-name'),sign:v('pa-pom-sign')}},
+  };
+  if(stageId==='labeling') return {
+    date:v('la-date'),product:v('la-product'),batch_no:v('la-batch'),labellers:v('la-labellers'),
+    counts:{issued:v('la-issued'),labeled:v('la-labeled'),non_conf:v('la-nonconf'),unaccounted:v('la-unacc')},
+    kpis:{yield_pct:v('la-yield'),nc_rate:v('la-ncrate'),pass_fail:v('la-pf')},
+    bottle_labels:{front:{issued:v('la-bf-i'),consumed:v('la-bf-c'),damaged:v('la-bf-d'),balance:v('la-bf-b')},back:{issued:v('la-bb-i'),consumed:v('la-bb-c'),damaged:v('la-bb-d'),balance:v('la-bb-b')}},
+    can_labels:{full:{issued:v('la-cf-i'),consumed:v('la-cf-c'),damaged:v('la-cf-d'),balance:v('la-cf-b')}},
+    kra_applied:v('la-kra'),verified_by_first:v('la-v1'),verified_by_final:v('la-v2'),
+  };
+  return {};
+}
+
+// ══════════════════════════════════════════════
+// STAGE FORM HTML GENERATORS
+// ══════════════════════════════════════════════
+function renderStageForm(stageId, batch){
+  const forms={ blending:blendingForm, filtration:filtrationForm, filling:fillingForm, pasteur:pasteurForm, labeling:labelingForm };
+  return (forms[stageId]||((b)=>'<p>Form not found</p>'))(batch);
+}
+
+function selOpts(opts){ return opts.map(o=>`<option>${o}</option>`).join(''); }
+const SHIFT_OPTS=['Day','Night'];
+const STAGE_PROC=['Before Cold Crushing','After Cold Crushing','After Re-Cold Crushing'];
+const SCRAP_OPTS=['','Yes','No','N/A'];
+
+function blendingForm(b){
+  let ciderRows='';
+  for(let i=1;i<=4;i++) ciderRows+=`<tr><td class="row-num">${i}</td>
+    <td><input type="text" name="cb_tank_${i}" placeholder="Tank"></td>
+    <td><input type="text" name="cb_batch_${i}" placeholder="Batch"></td>
+    <td><input type="text" name="cb_lot_${i}" placeholder="Lot"></td>
+    <td><input type="number" name="cb_vol_${i}" step="0.1" placeholder="0.0"></td>
+    <td><input type="number" name="cb_abv_${i}" step="0.01" placeholder="0.00"></td>
+    <td><input type="number" name="cb_brix_${i}" step="0.1" placeholder="0.0"></td>
+    <td><input type="number" name="cb_ta_${i}" step="0.01" placeholder="0.00"></td>
+    <td><input type="number" name="cb_ph_${i}" step="0.01" placeholder="0.00"></td>
+    <td><input type="text" name="cb_remarks_${i}" placeholder="—"></td>
+    <td><input type="text" name="cb_qc_${i}" placeholder="Init."></td></tr>`;
+  let recipeRows='';
+  for(let i=1;i<=8;i++) recipeRows+=`<tr><td class="row-num">${i}</td>
+    <td><input type="text" name="ri_name_${i}" placeholder="Ingredient"></td>
+    <td><input type="number" name="ri_pct_${i}" step="0.01" placeholder="0.00"></td>
+    <td><input type="number" name="ri_qty_use_${i}" step="0.001" placeholder="0.000" oninput="calcRiVariance(${i})"></td>
+    <td><input type="text" name="ri_lot_${i}" placeholder="Lot no."></td>
+    <td><input type="number" name="ri_qty_used_${i}" step="0.001" placeholder="0.000" oninput="calcRiVariance(${i})"></td>
+    <td class="calc-cell" id="ri-var-${i}">—</td></tr>`;
+  return `
+<div class="doc-badge">🧪 Blending Log · AO/Prod/Frm/002/001</div>
+<div class="group-box">
+  <div class="group-title">Run Header</div>
+  <div class="g3">
+    <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="bl-date" value="${today()}"></div>
+    <div class="field"><label>Product <span class="req">*</span></label><input type="text" id="bl-product" value="${b?.sku||''}"></div>
+    <div class="field"><label>Batch No. <span class="req">*</span></label><input type="text" id="bl-batch" class="mono" value="${b?.id||''}"></div>
+    <div class="field"><label>Blend LOT No. <span class="req">*</span></label><input type="text" id="bl-blend-lot" class="mono" placeholder="Blend lot no."></div>
+    <div class="field"><label>Filling Lot — Bottles</label><input type="text" id="bl-fill-btl" class="mono" placeholder="Lot no."></div>
+    <div class="field"><label>Filling Lot — Cans</label><input type="text" id="bl-fill-can" class="mono" placeholder="Lot no."></div>
+    <div class="field"><label>Shift <span class="req">*</span></label><select id="bl-shift"><option>Day</option><option>Night</option></select></div>
+  </div>
+</div>
+<div class="sec-label">Cider Base Details</div>
+<div style="overflow-x:auto;margin-bottom:14px">
+<table class="log-tbl">
+  <thead><tr><th style="width:24px">#</th><th>Tank</th><th>Batch</th><th>Lot</th><th>Volume (L)</th><th>ABV (%v/v)</th><th>Brix</th><th>TA</th><th>pH</th><th>Remarks</th><th>QC</th></tr></thead>
+  <tbody>${ciderRows}</tbody>
+</table>
+</div>
+<div class="sec-label">Recipe Quantities vs Actual</div>
+<div style="overflow-x:auto;margin-bottom:14px">
+<table class="log-tbl">
+  <thead><tr><th style="width:24px">#</th><th>Ingredient</th><th>% Qty</th><th>Qty to Use</th><th>Lot No.</th><th>Qty Used</th><th class="calc">Variance</th></tr></thead>
+  <tbody>${recipeRows}</tbody>
+  <tfoot><tr><td colspan="3" style="padding:8px 10px;border:1px solid var(--border);font-weight:600;font-size:11px;color:var(--steel)">Volume Summary</td>
+    <td style="border:1px solid var(--border);padding:4px 6px"><input type="number" id="bl-exp-vol" placeholder="Expected Vol (L)" style="border:1.5px solid var(--border);border-radius:6px;padding:6px 8px;width:100%;font-size:12px"></td>
+    <td colspan="2" style="border:1px solid var(--border);padding:4px 6px"><input type="number" id="bl-act-vol" placeholder="Actual Vol (L)" style="border:1.5px solid var(--border);border-radius:6px;padding:6px 8px;width:100%;font-size:12px;background:#FFF8E6" oninput="calcVolVar()"></td>
+    <td style="border:1px solid var(--border);padding:8px 10px"><span id="bl-vol-var" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600">—</span></td>
+  </tr></tfoot>
+</table>
+</div>
+<div class="group-box">
+  <div class="group-title">Product Characteristics (QC)</div>
+  <div class="g4">
+    <div class="field"><label>Specific Gravity <span class="req">*</span></label><input type="number" id="bl-sg" step="0.001" placeholder="e.g. 1.005"></div>
+    <div class="field"><label>Brix <span class="req">*</span></label><input type="number" id="bl-pc-brix" step="0.1" placeholder="e.g. 4.2"></div>
+    <div class="field"><label>Titratable Acidity <span class="req">*</span></label><input type="number" id="bl-ta" step="0.01" placeholder="e.g. 5.8"></div>
+    <div class="field"><label>pH <span class="req">*</span></label><input type="number" id="bl-ph" step="0.01" placeholder="e.g. 3.6"></div>
+  </div>
+  <div class="g2" style="margin-top:12px"><div class="field"><label>Done By</label><input type="text" id="bl-pc-by" placeholder="QC officer name"></div></div>
+</div>
+<div class="group-box">
+  <div class="group-title">Blending Details</div>
+  <div class="g3">
+    <div class="field"><label>Blending Tank</label><input type="text" id="bl-bd-tank" placeholder="e.g. Tank 3"></div>
+    <div class="field"><label>Centrifuge Loss (L)</label><input type="number" id="bl-centloss" step="0.1" placeholder="0.0"></div>
+    <div class="field"><label>Cold Crushing Period</label><input type="text" id="bl-ccperiod" placeholder="e.g. 24 hours"></div>
+    <div class="field"><label>Cold Crushing Temp (°C)</label><input type="number" id="bl-cctemp" step="0.1" placeholder="0.0"></div>
+    <div class="field"><label>Cold Crushing Start</label><input type="datetime-local" id="bl-ccstart"></div>
+    <div class="field"><label>Cold Crushing Stop</label><input type="datetime-local" id="bl-ccstop"></div>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">Sign-Off</div>
+  <div class="g4">
+    <div class="field"><label>Blending Done By <span class="req">*</span></label><input type="text" id="bl-done-by" value="${cfg.name}" placeholder="Operator name"></div>
+    <div class="field"><label>Date</label><input type="date" id="bl-done-date" value="${today()}"></div>
+    <div class="field"><label>Verified By</label><input type="text" id="bl-vfy-by" placeholder="Supervisor name"></div>
+    <div class="field"><label>Verification Date</label><input type="date" id="bl-vfy-date"></div>
+  </div>
+</div>`;
+}
+
+function filtrationForm(b){
+  let filtRows='';
+  for(let i=1;i<=5;i++) filtRows+=`<tr><td class="row-num">${i}</td>
+    <td><input type="date" name="ft_date_${i}"></td>
+    <td><select name="ft_shift_${i}">${selOpts(['','Day','Night'])}</select></td>
+    <td><input type="text" name="ft_product_${i}" placeholder="Product"></td>
+    <td><select name="ft_stage_${i}">${selOpts(['',...STAGE_PROC])}</select></td>
+    <td><input type="text" name="ft_filter_type_${i}" placeholder="e.g. Sheet"></td>
+    <td><input type="number" name="ft_micron_${i}" step="0.1" placeholder="μm"></td>
+    <td><input type="text" name="ft_tank_${i}" placeholder="Tank"></td>
+    <td><input type="number" name="ft_orig_vol_${i}" step="0.1" placeholder="0.0" oninput="calcFiltLoss(${i})"></td>
+    <td><input type="number" name="ft_new_vol_${i}" step="0.1" placeholder="0.0" oninput="calcFiltLoss(${i})"></td>
+    <td class="calc-cell" id="ft-loss-${i}">—</td>
+    <td class="calc-cell" id="ft-pct-${i}">—</td>
+    <td><input type="text" name="ft_exec_by_${i}" placeholder="Name"></td>
+    <td><input type="text" name="ft_conf_by_${i}" placeholder="Name"></td>
+    <td><select name="ft_scrap_${i}">${selOpts(SCRAP_OPTS)}</select></td></tr>`;
+  let centRows='';
+  for(let i=1;i<=3;i++) centRows+=`<tr><td class="row-num">${i}</td>
+    <td><input type="date" name="ct_date_${i}"></td>
+    <td><input type="text" name="ct_product_${i}" placeholder="Product"></td>
+    <td><select name="ct_shift_${i}">${selOpts(['','Day','Night'])}</select></td>
+    <td><select name="ct_stage_${i}">${selOpts(['',...STAGE_PROC])}</select></td>
+    <td class="spec-cell" id="ct-flow-${i}"><input type="number" name="ct_flow_${i}" step="1" placeholder="900" oninput="checkCentSpec(${i})"></td>
+    <td class="spec-cell" id="ct-bp-${i}"><input type="number" name="ct_bp_${i}" step="0.01" placeholder="2.6–2.8" oninput="checkCentSpec(${i})"></td>
+    <td><input type="number" name="ct_orig_vol_${i}" step="0.1" placeholder="0.0" oninput="calcCentLoss(${i})"></td>
+    <td><input type="number" name="ct_new_vol_${i}" step="0.1" placeholder="0.0" oninput="calcCentLoss(${i})"></td>
+    <td class="calc-cell" id="ct-loss-${i}">—</td>
+    <td><input type="text" name="ct_exec_by_${i}" placeholder="Name"></td>
+    <td><input type="text" name="ct_conf_by_${i}" placeholder="Name"></td>
+    <td><select name="ct_scrap_${i}">${selOpts(SCRAP_OPTS)}</select></td></tr>`;
+  let tempRows='';
+  for(let i=1;i<=6;i++) tempRows+=`<tr><td class="row-num">${i}</td>
+    <td><input type="date" name="ft_t_date_${i}"></td>
+    <td><select name="ft_t_shift_${i}">${selOpts(['','Day','Night'])}</select></td>
+    <td class="spec-cell" id="ft-temp-${i}"><input type="number" name="ft_t_temp_${i}" step="0.1" placeholder="°C" oninput="checkTempSpec(${i})"></td>
+    <td><input type="text" name="ft_t_done_by_${i}" placeholder="Name"></td>
+    <td><input type="text" name="ft_t_prod_lead_${i}" placeholder="Name"></td></tr>`;
+  return `
+<div class="doc-badge">🔬 Filtration, Cold Crushing &amp; Centrifuge Log</div>
+<div class="group-box">
+  <div class="group-title">Run Header</div>
+  <div class="g3">
+    <div class="field"><label>Batch No. <span class="req">*</span></label><input type="text" id="fi-batch" class="mono" value="${b?.id||''}"></div>
+    <div class="field"><label>Product <span class="req">*</span></label><input type="text" id="fi-product" value="${b?.sku||''}"></div>
+    <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="fi-date" value="${today()}"></div>
+  </div>
+</div>
+<div class="sec-label">Filtration</div>
+<div class="alert alert-info" style="margin-bottom:8px">Loss (L) and % Loss calculated automatically</div>
+<div style="overflow-x:auto;margin-bottom:14px">
+<table class="log-tbl"><thead><tr>
+  <th style="width:24px">#</th><th>Date</th><th>Shift</th><th>Product</th><th>Stage in Process</th>
+  <th>Filter Type</th><th>Micron</th><th>Holding Tank</th><th>Orig Vol (L)</th><th>New Vol (L)</th>
+  <th class="calc">Loss (L)</th><th class="calc">% Loss</th><th>Executed By</th><th>Confirmed By</th><th>Scrap Appr.</th>
+</tr></thead><tbody>${filtRows}</tbody></table>
+</div>
+<div class="field" style="margin-bottom:14px"><label>Comment</label><textarea id="fi-comment" rows="2" placeholder="Observations, deviations…"></textarea></div>
+<div class="sec-label">Centrifuge <span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:6px">Flow spec: 900 L/hr · Back pressure spec: 2.6–2.8 bar</span></div>
+<div style="overflow-x:auto;margin-bottom:14px">
+<table class="log-tbl"><thead><tr>
+  <th style="width:24px">#</th><th>Date</th><th>Product</th><th>Shift</th><th>Stage</th>
+  <th class="spec">Flow (L/hr) spec:900</th><th class="spec">Back Press. 2.6–2.8</th>
+  <th>Orig Vol (L)</th><th>New Vol (L)</th><th class="calc">Loss (L)</th>
+  <th>Exec. By</th><th>Conf. By</th><th>Scrap</th>
+</tr></thead><tbody>${centRows}</tbody></table>
+</div>
+<div class="sec-label">Temperature Control — Cold Crushing <span style="font-size:10px;color:var(--muted);font-weight:400;margin-left:6px">Initial 0–5°C · Subsequent 0–4°C</span></div>
+<div class="group-box" style="margin-bottom:12px">
+  <div class="group-title">Initial Temperature Reading</div>
+  <div class="g3">
+    <div class="field"><label>Initial Temp (°C) <span class="req">*</span></label><input type="number" id="fi-init-temp" step="0.1" placeholder="0–5°C" oninput="checkInitTemp()">
+      <span id="fi-init-hint" style="font-size:10px;color:var(--muted)">Spec: 0–5°C</span></div>
+    <div class="field"><label>Done By</label><input type="text" id="fi-init-by" placeholder="Operator name"></div>
+    <div class="field"><label>Production Lead</label><input type="text" id="fi-init-lead" placeholder="Lead name"></div>
+  </div>
+</div>
+<div style="overflow-x:auto;margin-bottom:14px">
+<table class="log-tbl"><thead><tr>
+  <th style="width:24px">#</th><th>Date</th><th>Shift</th><th class="spec">Temp (°C) 0–4°C</th><th>Done By</th><th>Prod. Lead</th>
+</tr></thead><tbody>${tempRows}</tbody></table>
+</div>
+<div class="group-box">
+  <div class="group-title">Sign-Off</div>
+  <div class="g4">
+    <div class="field"><label>Done By <span class="req">*</span></label><input type="text" id="fi-done-by" value="${cfg.name}"></div>
+    <div class="field"><label>Date</label><input type="date" id="fi-so-date" value="${today()}"></div>
+    <div class="field"><label>Shift</label><select id="fi-so-shift"><option>Day</option><option>Night</option></select></div>
+    <div class="field"><label>Production Lead</label><input type="text" id="fi-prod-lead" placeholder="Lead name"></div>
+  </div>
+</div>`;
+}
+
+function fillingForm(b){
+  return `
+<div class="doc-badge">🥫 Filling Log</div>
+<div class="group-box">
+  <div class="group-title">Header</div>
+  <div class="g3">
+    <div class="field"><label>Product <span class="req">*</span></label><input type="text" id="fl-product" value="${b?.sku||''}"></div>
+    <div class="field"><label>Shift <span class="req">*</span></label><select id="fl-shift"><option>Day</option><option>Night</option></select></div>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">Identification</div>
+  <div class="g3">
+    <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="fl-date" value="${today()}"></div>
+    <div class="field"><label>Operators</label><input type="text" id="fl-operators" placeholder="Operator names"></div>
+    <div class="field"><label>Machine Used</label><input type="text" id="fl-machine" placeholder="Machine ID"></div>
+    <div class="field"><label>Batch No. <span class="req">*</span></label><input type="text" id="fl-batch" class="mono" value="${b?.id||''}"></div>
+    <div class="field span2"><label>SKU — Bottle / Keg / Can</label><input type="text" id="fl-sku" value="${b?.sku||''}" placeholder="e.g. Savannah Dry 330ml Can"></div>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">🛢 Tank Details</div>
+  <div class="g4">
+    <div class="field"><label>Tank Start Volume (L)</label><input type="number" id="fl-tank-sv" step="0.1" placeholder="0.0"></div>
+    <div class="field"><label>Tank Start Temp (°C)</label><input type="number" id="fl-tank-st" step="0.1" placeholder="0.0"></div>
+    <div class="field"><label>Tank Final Volume (L)</label><input type="number" id="fl-tank-fv" step="0.1" placeholder="0.0"></div>
+    <div class="field"><label>Tank Final Temp (°C)</label><input type="number" id="fl-tank-ft" step="0.1" placeholder="0.0"></div>
+    <div class="field"><label>Total Volume Packed (L)</label><input type="number" id="fl-vol-packed" step="0.1" placeholder="0.0"></div>
+    <div class="field"><label>Issue for Pasteurization (L)</label><input type="number" id="fl-issue-past" step="0.1" placeholder="0.0"></div>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">🥫 Cans / Bottles</div>
+  <div class="g4">
+    <div class="field"><label>Issued</label><input type="number" id="fl-cans-i" placeholder="0" oninput="calcFillBalance('cans')"></div>
+    <div class="field"><label>Used (Good Product)</label><input type="number" id="fl-cans-u" placeholder="0" oninput="calcFillBalance('cans')"></div>
+    <div class="field"><label>Damaged</label><input type="number" id="fl-cans-d" placeholder="0" oninput="calcFillBalance('cans')"></div>
+    <div class="field"><label>Balance <span class="calc-badge">Auto</span></label><input type="text" id="fl-cans-b" readonly placeholder="—"></div>
+  </div>
+  <div class="field" style="max-width:200px;margin-top:10px"><label>Cans/Bottles Tally</label>
+    <select id="fl-cans-tally"><option value="">—</option><option>Yes</option><option>No</option></select></div>
+</div>
+<div class="group-box">
+  <div class="group-title">👑 Caps / Crowns</div>
+  <div class="g4">
+    <div class="field"><label>Issued</label><input type="number" id="fl-caps-i" placeholder="0" oninput="calcFillBalance('caps')"></div>
+    <div class="field"><label>Used (Good Product)</label><input type="number" id="fl-caps-u" placeholder="0" oninput="calcFillBalance('caps')"></div>
+    <div class="field"><label>Damaged</label><input type="number" id="fl-caps-d" placeholder="0" oninput="calcFillBalance('caps')"></div>
+    <div class="field"><label>Balance <span class="calc-badge">Auto</span></label><input type="text" id="fl-caps-b" readonly placeholder="—"></div>
+  </div>
+  <div class="field" style="max-width:200px;margin-top:10px"><label>Caps/Crowns Tally</label>
+    <select id="fl-caps-tally"><option value="">—</option><option>Yes</option><option>No</option></select></div>
+</div>
+<div class="group-box">
+  <div class="group-title">⏱ Timing &amp; OEE</div>
+  <div class="g4">
+    <div class="field"><label>Filling Start Time</label><input type="time" id="fl-start"></div>
+    <div class="field"><label>Filling Finish Time</label><input type="time" id="fl-finish"></div>
+    <div class="field"><label>Total Downtime (hrs)</label><input type="number" id="fl-downtime" step="0.1" placeholder="0.0" oninput="calcAvail()"></div>
+    <div class="field"><label>Total Available Hrs</label><input type="number" id="fl-avail" step="0.1" placeholder="0.0" oninput="calcAvail()"></div>
+  </div>
+  <div class="g3" style="margin-top:12px">
+    <div class="field"><label>Availability % <span class="calc-badge">Auto</span></label><input type="text" id="fl-avail-pct" readonly placeholder="—"></div>
+    <div class="field"><label>Performance %</label><input type="number" id="fl-perf" step="0.1" placeholder="Manual"></div>
+    <div class="field"><label>Quality %</label><input type="number" id="fl-qual" step="0.1" placeholder="Manual"></div>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">💧 Flow Meter Readings</div>
+  <div class="g4">
+    <div class="field"><label>START: Reading 1</label><input type="number" id="fl-fm-s1" step="0.01" class="mono" placeholder="0.00"></div>
+    <div class="field"><label>START: Reading 2</label><input type="number" id="fl-fm-s2" step="0.01" class="mono" placeholder="0.00"></div>
+    <div class="field"><label>STOP: Reading 1</label><input type="number" id="fl-fm-e1" step="0.01" class="mono" placeholder="0.00"></div>
+    <div class="field"><label>STOP: Reading 2</label><input type="number" id="fl-fm-e2" step="0.01" class="mono" placeholder="0.00"></div>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">📉 Filling Loss</div>
+  <div class="g4">
+    <div class="field"><label>Start Volume (L)</label><input type="number" id="fl-ls-sv" step="0.1" placeholder="0.0" oninput="calcFillingLoss()"></div>
+    <div class="field"><label>Final Volume (L)</label><input type="number" id="fl-ls-fv" step="0.1" placeholder="0.0" oninput="calcFillingLoss()"></div>
+    <div class="field"><label>Filling Loss (L) <span class="calc-badge">Auto</span></label><input type="text" id="fl-ls-loss" readonly placeholder="—"></div>
+    <div class="field"><label>% Loss <span class="calc-badge">Auto</span></label><input type="text" id="fl-ls-pct" readonly placeholder="—"></div>
+    <div class="field span2"><label>Causes of Loss</label><input type="text" id="fl-ls-cause" placeholder="Describe causes…"></div>
+    <div class="field"><label>Total Loss (L)</label><input type="number" id="fl-ls-total" step="0.1" placeholder="0.0"></div>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">Data Confirmation Done By</div>
+  <div class="field" style="max-width:280px"><input type="text" id="fl-conf-by" placeholder="Name"></div>
+</div>
+<div class="group-box">
+  <div class="group-title">Sign-Off</div>
+  <div class="signoff-grid">
+    <div class="signoff-block"><div class="signoff-label">🏭 TMO Incharge</div>
+      <div class="field"><label>Name</label><input type="text" id="fl-tmo-name" value="${cfg.name}"></div>
+      <div class="field"><label>Signature</label><input type="text" id="fl-tmo-sign" placeholder="Sign/Initials"></div>
+    </div>
+    <div class="signoff-block"><div class="signoff-label">⚙️ Engineering Manager</div>
+      <div class="field"><label>Name</label><input type="text" id="fl-em-name" placeholder="EM name"></div>
+      <div class="field"><label>Signature</label><input type="text" id="fl-em-sign" placeholder="Sign/Initials"></div>
+    </div>
+    <div class="signoff-block"><div class="signoff-label">📋 Plant Operations Manager</div>
+      <div class="field"><label>Name</label><input type="text" id="fl-pom-name" placeholder="POM name"></div>
+      <div class="field"><label>Signature</label><input type="text" id="fl-pom-sign" placeholder="Sign/Initials"></div>
+    </div>
+  </div>
+</div>`;
+}
+
+function pasteurForm(b){
+  return `
+<div class="doc-badge">🌡 Pasteurization Log</div>
+<div class="group-box">
+  <div class="group-title">Run Identification</div>
+  <div class="g3">
+    <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="pa-date" value="${today()}"></div>
+    <div class="field"><label>Product <span class="req">*</span></label><input type="text" id="pa-product" value="${b?.sku||''}"></div>
+    <div class="field"><label>Batch No. <span class="req">*</span></label><input type="text" id="pa-batch" class="mono" value="${b?.id||''}"></div>
+    <div class="field"><label>SKU — Can / Bottle</label><select id="pa-sku"><option value="">—</option><option>Can</option><option>Bottle</option><option>Keg</option></select></div>
+    <div class="field span2"><label>Pasteurizer Worker On Duty (Team Lead) <span class="req">*</span></label><input type="text" id="pa-worker" value="${cfg.name}" placeholder="Name"></div>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">📦 Product Counts</div>
+  <div class="g4">
+    <div class="field"><label>Total Product Issued <span class="req">*</span></label><input type="number" id="pa-issued" placeholder="0" oninput="calcPasteurMetrics()"></div>
+    <div class="field"><label>Product Pasteurized <span class="req">*</span></label><input type="number" id="pa-past" placeholder="0" oninput="calcPasteurMetrics()"></div>
+    <div class="field"><label>Damaged Product</label><input type="number" id="pa-damaged" placeholder="0" oninput="calcPasteurMetrics()"></div>
+    <div class="field"><label>Unaccounted <span class="calc-badge">Auto</span></label><input type="text" id="pa-unacc" readonly placeholder="—"></div>
+  </div>
+  <div class="g3" style="margin-top:12px">
+    <div class="field"><label>Yield % <span class="calc-badge">Auto</span></label><input type="text" id="pa-yield" readonly placeholder="—"></div>
+    <div class="field"><label>Damage Rate % <span class="calc-badge">Auto</span></label><input type="text" id="pa-dmg-rate" readonly placeholder="—"></div>
+    <div class="field"><label>Pass / Fail <span class="calc-badge">Auto</span></label><input type="text" id="pa-pf" readonly placeholder="—"></div>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">✅ Data Confirmation</div>
+  <div class="g2">
+    <div class="field"><label>Data Confirmation Tally</label>
+      <select id="pa-tally"><option value="">—</option><option>Yes</option><option>No</option></select></div>
+    <div class="field"><label>Data Confirmation Done By</label><input type="text" id="pa-conf-by" placeholder="Name"></div>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">Sign-Off</div>
+  <div class="signoff-grid">
+    <div class="signoff-block"><div class="signoff-label">🏭 TMO Incharge</div>
+      <div class="field"><label>Name</label><input type="text" id="pa-tmo-name" value="${cfg.name}"></div>
+      <div class="field"><label>Signature</label><input type="text" id="pa-tmo-sign" placeholder="Sign/Initials"></div>
+    </div>
+    <div class="signoff-block"><div class="signoff-label">⚙️ Engineering Manager</div>
+      <div class="field"><label>Name</label><input type="text" id="pa-em-name" placeholder="EM name"></div>
+      <div class="field"><label>Signature</label><input type="text" id="pa-em-sign" placeholder="Sign/Initials"></div>
+    </div>
+    <div class="signoff-block"><div class="signoff-label">📋 Plant Operations Manager</div>
+      <div class="field"><label>Name</label><input type="text" id="pa-pom-name" placeholder="POM name"></div>
+      <div class="field"><label>Signature</label><input type="text" id="pa-pom-sign" placeholder="Sign/Initials"></div>
+    </div>
+  </div>
+</div>`;
+}
+
+function labelingForm(b){
+  return `
+<div class="doc-badge">🏷 Labeling Log</div>
+<div class="group-box">
+  <div class="group-title">Run Identification</div>
+  <div class="g3">
+    <div class="field"><label>Date <span class="req">*</span></label><input type="date" id="la-date" value="${today()}"></div>
+    <div class="field"><label>Product <span class="req">*</span></label><input type="text" id="la-product" value="${b?.sku||''}"></div>
+    <div class="field"><label>Batch No. <span class="req">*</span></label><input type="text" id="la-batch" class="mono" value="${b?.id||''}"></div>
+    <div class="field span3"><label>Labellers On Duty (Team Lead) <span class="req">*</span></label><input type="text" id="la-labellers" value="${cfg.name}" placeholder="Names of labellers on duty"></div>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">📦 Product Counts</div>
+  <div class="g4">
+    <div class="field"><label>No. of Issued Product <span class="req">*</span></label><input type="number" id="la-issued" placeholder="0" oninput="calcLabelMetrics()"></div>
+    <div class="field"><label>Labeled Product <span class="req">*</span></label><input type="number" id="la-labeled" placeholder="0" oninput="calcLabelMetrics()"></div>
+    <div class="field"><label>Non-conforming Product</label><input type="number" id="la-nonconf" placeholder="0" oninput="calcLabelMetrics()"></div>
+    <div class="field"><label>Unaccounted <span class="calc-badge">Auto</span></label><input type="text" id="la-unacc" readonly placeholder="—"></div>
+  </div>
+  <div class="g3" style="margin-top:12px">
+    <div class="field"><label>Labeling Yield % <span class="calc-badge">Auto</span></label><input type="text" id="la-yield" readonly placeholder="—"></div>
+    <div class="field"><label>Non-conforming Rate % <span class="calc-badge">Auto</span></label><input type="text" id="la-ncrate" readonly placeholder="—"></div>
+    <div class="field"><label>Pass / Fail <span class="calc-badge">Auto</span></label><input type="text" id="la-pf" readonly placeholder="—"></div>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">🍾 Bottle Labels</div>
+  <div style="overflow-x:auto">
+  <table class="log-tbl">
+    <thead><tr><th style="min-width:110px">Type</th><th>Issued</th><th>Consumed</th><th>Damaged</th><th class="calc">Balance <span class="calc-badge">Auto</span></th></tr></thead>
+    <tbody>
+      <tr><td style="font-weight:600;font-size:11px;padding:8px 10px;background:var(--bg2)">Front Label</td>
+        <td><input type="number" id="la-bf-i" placeholder="0" oninput="calcLblBal('bf')"></td>
+        <td><input type="number" id="la-bf-c" placeholder="0" oninput="calcLblBal('bf')"></td>
+        <td><input type="number" id="la-bf-d" placeholder="0" oninput="calcLblBal('bf')"></td>
+        <td class="calc-cell"><input type="text" id="la-bf-b" readonly placeholder="—"></td></tr>
+      <tr><td style="font-weight:600;font-size:11px;padding:8px 10px;background:var(--bg2)">Back Label</td>
+        <td><input type="number" id="la-bb-i" placeholder="0" oninput="calcLblBal('bb')"></td>
+        <td><input type="number" id="la-bb-c" placeholder="0" oninput="calcLblBal('bb')"></td>
+        <td><input type="number" id="la-bb-d" placeholder="0" oninput="calcLblBal('bb')"></td>
+        <td class="calc-cell"><input type="text" id="la-bb-b" readonly placeholder="—"></td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">🥫 Can Labels (Full Wrap)</div>
+  <div style="overflow-x:auto">
+  <table class="log-tbl">
+    <thead><tr><th style="min-width:110px">Type</th><th>Issued</th><th>Consumed</th><th>Damaged</th><th class="calc">Balance <span class="calc-badge">Auto</span></th></tr></thead>
+    <tbody>
+      <tr><td style="font-weight:600;font-size:11px;padding:8px 10px;background:var(--bg2)">Full Wrap</td>
+        <td><input type="number" id="la-cf-i" placeholder="0" oninput="calcLblBal('cf')"></td>
+        <td><input type="number" id="la-cf-c" placeholder="0" oninput="calcLblBal('cf')"></td>
+        <td><input type="number" id="la-cf-d" placeholder="0" oninput="calcLblBal('cf')"></td>
+        <td class="calc-cell"><input type="text" id="la-cf-b" readonly placeholder="—"></td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+<div class="group-box">
+  <div class="group-title">🏛 KRA &amp; Verification</div>
+  <div class="g3">
+    <div class="field"><label>KRA Applied (pcs)</label><input type="number" id="la-kra" class="mono" placeholder="Excise stamp count"></div>
+    <div class="field"><label>Verified By (First)</label><input type="text" id="la-v1" placeholder="Name / Initials"></div>
+    <div class="field"><label>Verified By (Final)</label><input type="text" id="la-v2" placeholder="Name / Initials"></div>
+  </div>
+</div>`;
+}
+
+// ══════════════════════════════════════════════
+// CALCULATIONS (per stage)
+// ══════════════════════════════════════════════
+function initStageFormCalcs(stageId){
+  // Pre-fill date fields
+  document.querySelectorAll('input[type="date"]:not([value])').forEach(el=>{ if(!el.value) el.value=today(); });
+}
+
+// Blending
+function calcRiVariance(i){
+  const tu=parseFloat(document.querySelector(`[name="ri_qty_use_${i}"]`)?.value)||0;
+  const u=parseFloat(document.querySelector(`[name="ri_qty_used_${i}"]`)?.value)||0;
+  const el=document.getElementById(`ri-var-${i}`);
+  if(!el) return;
+  if(!tu||!u){el.textContent='—';el.style.color='';return}
+  const pct=(((u-tu)/tu)*100).toFixed(1);
+  el.textContent=(parseFloat(pct)>0?'+':'')+pct+'%';
+  el.style.color=Math.abs(parseFloat(pct))>5?'var(--red)':Math.abs(parseFloat(pct))>2?'var(--amber)':'var(--green)';
+}
+function calcVolVar(){
+  const exp=parseFloat(document.getElementById('bl-exp-vol')?.value)||0;
+  const act=parseFloat(document.getElementById('bl-act-vol')?.value)||0;
+  const el=document.getElementById('bl-vol-var');
+  if(!el||!exp||!act){if(el)el.textContent='—';return}
+  const d=act-exp,pct=((d/exp)*100).toFixed(2);
+  el.textContent=`${d>0?'+':''}${d.toFixed(1)}L (${d>0?'+':''}${pct}%)`;
+  el.style.color=Math.abs(parseFloat(pct))>5?'var(--red)':Math.abs(parseFloat(pct))>2?'var(--amber)':'var(--green)';
+}
+
+// Filtration
+function calcFiltLoss(i){
+  const o=parseFloat(document.querySelector(`[name="ft_orig_vol_${i}"]`)?.value)||0;
+  const n=parseFloat(document.querySelector(`[name="ft_new_vol_${i}"]`)?.value)||0;
+  const lEl=document.getElementById(`ft-loss-${i}`);
+  const pEl=document.getElementById(`ft-pct-${i}`);
+  if(!lEl||!pEl) return;
+  if(!o||!n){lEl.textContent='—';pEl.textContent='—';return}
+  const loss=o-n,pct=((loss/o)*100).toFixed(2);
+  lEl.textContent=loss.toFixed(1);
+  pEl.textContent=pct+'%';
+  const c=parseFloat(pct)>5?'var(--amber)':'var(--teal)';
+  lEl.style.color=pEl.style.color=c;
+}
+function calcCentLoss(i){
+  const o=parseFloat(document.querySelector(`[name="ct_orig_vol_${i}"]`)?.value)||0;
+  const n=parseFloat(document.querySelector(`[name="ct_new_vol_${i}"]`)?.value)||0;
+  const el=document.getElementById(`ct-loss-${i}`);
+  if(!el) return;
+  if(!o||!n){el.textContent='—';return}
+  el.textContent=(o-n).toFixed(1);
+}
+function checkCentSpec(i){
+  const flow=parseFloat(document.querySelector(`[name="ct_flow_${i}"]`)?.value);
+  const bp=parseFloat(document.querySelector(`[name="ct_bp_${i}"]`)?.value);
+  const fTd=document.getElementById(`ct-flow-${i}`);
+  const bTd=document.getElementById(`ct-bp-${i}`);
+  if(!isNaN(flow)&&fTd){const out=flow!==900;fTd.classList.toggle('out',out);fTd.classList.toggle('ok',!out);}
+  if(!isNaN(bp)&&bTd){const out=bp<2.6||bp>2.8;bTd.classList.toggle('out',out);bTd.classList.toggle('ok',!out);}
+}
+function checkTempSpec(i){
+  const t=parseFloat(document.querySelector(`[name="ft_t_temp_${i}"]`)?.value);
+  const td=document.getElementById(`ft-temp-${i}`);
+  if(isNaN(t)||!td) return;
+  const out=t<0||t>4;
+  td.classList.toggle('out',out);td.classList.toggle('ok',!out);
+}
+function checkInitTemp(){
+  const t=parseFloat(document.getElementById('fi-init-temp')?.value);
+  const el=document.getElementById('fi-init-hint');
+  if(!el) return;
+  if(isNaN(t)){el.textContent='Spec: 0–5°C';el.style.color='var(--muted)';return}
+  const out=t<0||t>5;
+  el.textContent=out?`⚠ Out of spec (0–5°C)! Got ${t}°C`:`✓ In spec`;
+  el.style.color=out?'var(--red)':'var(--green)';
+  el.style.fontWeight='700';
+}
+
+// Filling
+function calcFillBalance(type){
+  const i=parseFloat(document.getElementById(`fl-${type}-i`)?.value)||0;
+  const u=parseFloat(document.getElementById(`fl-${type}-u`)?.value)||0;
+  const d=parseFloat(document.getElementById(`fl-${type}-d`)?.value)||0;
+  const bEl=document.getElementById(`fl-${type}-b`);
+  if(!bEl) return;
+  if(i){const bal=i-u-d;bEl.value=bal;bEl.className=bal<0?'bad':bal===0?'good':'';}
+}
+function calcAvail(){
+  const a=parseFloat(document.getElementById('fl-avail')?.value)||0;
+  const d=parseFloat(document.getElementById('fl-downtime')?.value)||0;
+  const el=document.getElementById('fl-avail-pct');
+  if(!el||!a){if(el)el.value='—';return}
+  const pct=(((a-d)/a)*100).toFixed(1);
+  el.value=pct+'%';
+  el.className=parseFloat(pct)>=85?'good':parseFloat(pct)>=70?'warn':'bad';
+}
+function calcFillingLoss(){
+  const sv=parseFloat(document.getElementById('fl-ls-sv')?.value)||0;
+  const fv=parseFloat(document.getElementById('fl-ls-fv')?.value)||0;
+  const lEl=document.getElementById('fl-ls-loss');
+  const pEl=document.getElementById('fl-ls-pct');
+  if(!lEl||!pEl) return;
+  if(sv&&fv){lEl.value=(sv-fv).toFixed(1);}
+  const total=parseFloat(document.getElementById('fl-ls-total')?.value)||0;
+  if(sv&&total&&pEl){pEl.value=((total/sv)*100).toFixed(2)+'%';}
+}
+
+// Pasteurization
+function calcPasteurMetrics(){
+  const issued=parseFloat(document.getElementById('pa-issued')?.value)||0;
+  const past=parseFloat(document.getElementById('pa-past')?.value)||0;
+  const dam=parseFloat(document.getElementById('pa-damaged')?.value)||0;
+  const uEl=document.getElementById('pa-unacc');
+  const yEl=document.getElementById('pa-yield');
+  const dEl=document.getElementById('pa-dmg-rate');
+  const pEl=document.getElementById('pa-pf');
+  if(!issued){[uEl,yEl,dEl,pEl].forEach(e=>{if(e){e.value='—';e.className=''}});return}
+  const u=issued-past-dam;
+  const yp=((past/issued)*100).toFixed(1);
+  const dp=((dam/issued)*100).toFixed(2);
+  if(uEl){uEl.value=u;uEl.className=u<0?'bad':u===0?'good':'warn';}
+  if(yEl){yEl.value=yp+'%';yEl.className=parseFloat(yp)>=98?'good':parseFloat(yp)>=95?'warn':'bad';}
+  if(dEl){dEl.value=dp+'%';dEl.className=parseFloat(dp)<=1?'good':parseFloat(dp)<=3?'warn':'bad';}
+  if(pEl){pEl.value=parseFloat(yp)>=95?'✓ Pass':'✗ Fail';pEl.className=parseFloat(yp)>=95?'good':'bad';}
+}
+
+// Labeling
+function calcLabelMetrics(){
+  const iss=parseFloat(document.getElementById('la-issued')?.value)||0;
+  const lab=parseFloat(document.getElementById('la-labeled')?.value)||0;
+  const nc=parseFloat(document.getElementById('la-nonconf')?.value)||0;
+  const uEl=document.getElementById('la-unacc');
+  const yEl=document.getElementById('la-yield');
+  const nEl=document.getElementById('la-ncrate');
+  const pEl=document.getElementById('la-pf');
+  if(!iss){[uEl,yEl,nEl,pEl].forEach(e=>{if(e){e.value='—';e.className=''}});return}
+  const u=iss-lab-nc;
+  const yp=((lab/iss)*100).toFixed(1);
+  const np=((nc/iss)*100).toFixed(2);
+  if(uEl){uEl.value=u;uEl.className=u<0?'bad':u===0?'good':'warn';}
+  if(yEl){yEl.value=yp+'%';yEl.className=parseFloat(yp)>=98?'good':parseFloat(yp)>=95?'warn':'bad';}
+  if(nEl){nEl.value=np+'%';nEl.className=parseFloat(np)<=1?'good':parseFloat(np)<=3?'warn':'bad';}
+  if(pEl){pEl.value=parseFloat(yp)>=95?'✓ Pass':'✗ Fail';pEl.className=parseFloat(yp)>=95?'good':'bad';}
+}
+function calcLblBal(prefix){
+  const i=parseFloat(document.getElementById(`la-${prefix}-i`)?.value)||0;
+  const c=parseFloat(document.getElementById(`la-${prefix}-c`)?.value)||0;
+  const d=parseFloat(document.getElementById(`la-${prefix}-d`)?.value)||0;
+  const bEl=document.getElementById(`la-${prefix}-b`);
+  if(!bEl) return;
+  if(i){const bal=i-c-d;bEl.value=bal;bEl.className=bal<0?'bad':bal===0?'good':'';}
+}
+
+// ══════════════════════════════════════════════
+// DEMO APPROVAL (console)
+// Usage: demoApprove('AO-20260324-001','filling',0,'lm','approved')
+// ══════════════════════════════════════════════
+window.demoApprove=function(batchId,stageId,subIdx,approver,decision,comment=''){
+  const b=batches.find(x=>x.id===batchId);
+  if(!b){console.error('Batch not found');return}
+  const sub=b.stages[stageId]?.[subIdx];
+  if(!sub){console.error('Submission not found');return}
+  sub.approvals=sub.approvals||{};
+  sub.approvals[approver]={status:decision,comment,at:new Date().toISOString()};
+  const s=STAGES.find(x=>x.id===stageId);
+  const allDone=s.approvers.every(a=>sub.approvals[a]);
+  const anyRej=s.approvers.some(a=>sub.approvals[a]?.status==='rejected');
+  if(allDone&&!anyRej) sub.status='approved';
+  else if(anyRej) sub.status='rejected';
+  persist();
+  toast(`Run ${subIdx+1} ${decision} (${approver})`,'success');
+  if(activeBatchId===batchId) openBatch(batchId);
+};
+
+// ══════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════
+function today(){ return new Date().toISOString().split('T')[0]; }
+
+function logOut(){
+  if(!confirm('Log out? Your submitted data is saved. You will need to enter your name again to log back in.')) return;
+  // Clear identity only — keep batch data intact
+  cfg.name='Operator';
+  cfg.role='operator';
+  persist();
+  document.getElementById('userLbl').textContent='';
+  toast('Logged out successfully','info');
+  setTimeout(()=>goTo('setup'),600);
+}
+function setSyncState(state,label){
+  const dot=document.getElementById('syncDot');
+  const lbl=document.getElementById('syncLbl');
+  if(dot){dot.className='sync-dot'+(state==='spin'?' spin':'');dot.style.background=state==='ok'?'var(--green)':state==='warn'?'var(--amber)':'var(--red)';}
+  if(lbl) lbl.textContent=label;
+}
+function toast(msg,type='info'){
+  const el=document.getElementById('toast');
+  const icons={success:'✓',error:'✕',info:'ℹ'};
+  el.innerHTML=`<span>${icons[type]||'ℹ'}</span> ${msg}`;
+  el.className=`toast t-${type} show`;
+  clearTimeout(el._t);
+  el._t=setTimeout(()=>el.classList.remove('show'),4500);
+}
+
+// ══════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded',()=>{
+  loadState();
+  document.getElementById('userLbl').textContent='👤 '+cfg.name;
+  setSyncState(cfg.url?'ok':'warn',cfg.url?'Connected':'Demo mode');
+  if(cfg.name&&cfg.name!=='Operator') goTo('home');
+  else goTo('setup');
+});
+</script>
+</body>
+</html>
